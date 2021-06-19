@@ -51,7 +51,7 @@ class AppleIdAuth(BaseOAuth2):
     TOKEN_TTL_SEC = 6 * 30 * 24 * 60 * 60
 
     def get_audience(self):
-        client_id = self.setting('CLIENT')
+        client_id = self.get_client_id()
         return self.setting('AUDIENCE', default=[client_id])
 
     def auth_params(self, *args, **kwargs):
@@ -73,9 +73,21 @@ class AppleIdAuth(BaseOAuth2):
         """
         return self.setting('SECRET')
 
+    def get_client_id(self):
+        """
+        Return client_id based on device OS (Mac or other)
+        """
+        request_data = self.strategy.request_data()
+        if request_data.get('appleUseBundleId'):
+            client_id = self.setting('CLIENT_MAC')
+        else:
+            client_id = self.setting('CLIENT')
+
+        return client_id
+
     def generate_client_secret(self):
         now = int(time.time())
-        client_id = self.setting('CLIENT')
+        client_id = self.get_client_id()
         team_id = self.setting('TEAM')
         key_id = self.setting('KEY')
         private_key = self.get_private_key()
@@ -93,7 +105,7 @@ class AppleIdAuth(BaseOAuth2):
                           headers=headers)
 
     def get_key_and_secret(self):
-        client_id = self.setting('CLIENT')
+        client_id = self.get_client_id()
         client_secret = self.generate_client_secret()
         return client_id, client_secret
 
